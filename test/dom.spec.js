@@ -412,4 +412,46 @@ describe('Components', () => {
 			}, 10)
 		}, 10)
 	})
+	
+	it('should resolve in streams nested components', done => {
+		let trigger$ = stream(false)
+		let Component = () => {
+			return <div />
+		}
+		let app = <div>
+			{
+				if$(trigger$,
+					<Component />
+				)
+			}
+		</div>
+		testRender(app, [
+			'<div></div>',
+			'<div><div></div></div>'
+		], done)
+		setTimeout(() => {
+			trigger$(true)
+		}, 10)
+	})
+	
+	it('should resolve in streams nested components returning streams', done => {
+		let trigger$ = stream(false)
+		let Component = () => {
+			return stream(<div />)
+		}
+		let app = <div>
+			{
+				if$(trigger$,
+					<Component />
+				)
+			}
+		</div>
+		testRender(app, [
+			'<div></div>',
+			'<div><div></div></div>'
+		], done)
+		setTimeout(() => {
+			trigger$(true)
+		}, 10)
+	})
 });

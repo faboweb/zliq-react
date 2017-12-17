@@ -13,7 +13,7 @@ export const h = (tag, props, ...children) => {
 		let constructedChildren = resolveChildren(children, globals)
 		let mergedChildren$ = mergeChildren$(constructedChildren);
 		// jsx usually resolves known tags as strings and unknown tags as functions
-		// if it is a function it is treated as a componen and will resolve it
+		// if it is a function it is treated as a component and will resolve it
 		// props are not automatically resolved
 		if (typeof tag === 'function') {
 			let result = tag(
@@ -21,10 +21,7 @@ export const h = (tag, props, ...children) => {
 				mergedChildren$,
 				globals
 			)
-			if (result.IS_ELEMENT_CONSTRUCTOR) {
-				return result(globals)
-			}
-			return result
+			return resolveChild(result, globals)
 		}
 		return merge$([
 			wrapProps$(props),
