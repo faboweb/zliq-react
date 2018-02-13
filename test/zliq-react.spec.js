@@ -62,7 +62,7 @@ describe('Components', () => {
 		let clicks$ = stream(3);
 		let component = <DoubleClicks clicks$={clicks$} />;
 		testRender(component, [
-			'<p>Clicks times 2: 6</p>'
+			({element}) => expect(element.outerHTML).toBe('<p>Clicks times 2: 6</p>')
 		], done);
 	});
 
@@ -92,25 +92,8 @@ describe('Components', () => {
 			}
 		});
 	});
-	
-	it('should reset globals for sub-trees', done => {
-		const ShowGlobals = (props, children, globals) => {
-			return <p>{globals.value}</p>
-		}
-		let clicks$ = stream(3);
-		let component = <div>
-			<div globals={{value: 'NESTED GLOBALS'}}><ShowGlobals /></div>
-		</div>;
-		testRender(component, [
-			'<div><p>NESTED GLOBALS</p></div>'
-		], done, {
-			globals: {
-				value: 'GLOBAL TEXT'
-			}
-		});
-	});
 
-	it('should update elements with text-nodes', done => {
+	it('should update elements with textnodes', done => {
 		let trigger$ = stream()
 		testRender(<p>{if$(trigger$, <div></div>, 'HELLO WORLD')}</p>, [
 			'<p><div></div></p>',
@@ -253,8 +236,8 @@ describe('Components', () => {
 		], done);
 	});
 
-	// TODO
-	xit('should trigger lifecycle events on nested components', done => {
+
+	it('should trigger lifecycle events on nested components', done => {
 		const mountedMock = jest.fn();
 		const createdMock = jest.fn();
 		const removedMock = jest.fn();
@@ -264,7 +247,7 @@ describe('Components', () => {
 			created: createdMock,
 			removed: removedMock
 		}
-		const component = <div cycle={cycle} />;
+		const component = <div id="test" cycle={cycle} />;
 
 		let app = <div>
 			{
@@ -277,10 +260,26 @@ describe('Components', () => {
 			() => trigger$(true),
 			() => {
 				expect(mountedMock.mock.calls.length).toBe(2);
-				expect(createdMock.mock.calls.length).toBe(2);
+				expect(createdMock.mock.calls.length).toBe(1);
 				expect(removedMock.mock.calls.length).toBe(1);
 			}
 		], done);
+	})
+
+	it('should isolate children from updates', done => {
+		let trigger$ = stream(true)
+		let app = <div isolated>
+		{
+			if$(trigger$, 'HALLO WORLD', 'BYE WORLD')
+		}
+		</div>;
+		testRender(app, [
+			'<div>HALLO WORLD</div>',
+			'<div>HALLO WORLD</div>'
+		], done)
+		setTimeout(() => {
+			trigger$(false)
+		}, 50)
 	})
 
 	it('should increment versions up to the root', done => {
@@ -436,50 +435,5 @@ describe('Components', () => {
 				trigger2$(true)
 			}, 10)
 		}, 10)
-	})
-	
-	it('should resolve in streams nested components', done => {
-		let trigger$ = stream(false)
-		let Component = () => {
-			return <div />
-		}
-		let app = <div>
-			{
-				if$(trigger$,
-					<Component />
-				)
-			}
-		</div>
-		testRender(app, [
-			'<div></div>',
-			'<div><div></div></div>'
-		], done)
-		setTimeout(() => {
-			trigger$(true)
-		}, 10)
-	})
-	
-	it('should allow components returning streams', done => {
-		let Component = () => {
-			return stream(<div />)
-		}
-		let app = <div>
-			<Component />
-		</div>
-		testRender(app, [
-			'<div><div></div></div>'
-		], done)
-	})
-	
-	it('should allow components returning an array of components', done => {
-		let Component = () => {
-			return [<div />, <div />]
-		}
-		let app = <div>
-			<Component />
-		</div>
-		testRender(app, [
-			'<div><div></div><div></div></div>'
-		], done)
 	})
 });

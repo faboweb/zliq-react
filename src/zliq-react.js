@@ -28,13 +28,11 @@ export const h = (tag, props, ...children) => {
 		// if it is a function it is treated as a component and will resolve it
 		// props are not automatically resolved
 		if (typeof tag === 'function') {
-			let result = tag(
+			return tag(
 				props || {},
 				mergedChildren$,
 				globals
-			)
-            return resolveChildren(result, globals)
-            .map(({tag, prop, children}) => React.createElement(tag, props, children))
+			)(globals)
 		}
 		return merge$([
 			wrapProps$(props),
@@ -174,8 +172,6 @@ function resolveChild(child, globals) {
 		return child(globals)
 	}
 	if (isStream(child)) {
-		return child.map(x => {
-				return resolveChildren(x, globals)
-			})
+		return child.map(x => resolveChildren(x, globals))
 	}
 }
