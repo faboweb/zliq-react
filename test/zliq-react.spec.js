@@ -1,6 +1,13 @@
-import { render, h, stream, if$, merge$, initRouter, CHILDREN_CHANGED, ADDED, REMOVED, UPDATED, isStream, join$ } from '../src';
+import {h, render} from '../src'
+import {merge$, stream, if$, join$, isStream} from 'zliq'
 import { testRender, test$ } from './helpers/test-component';
-import assert from 'assert';
+import React from 'react'
+
+describe('Zliq-React', () => {
+    it('should render things', () => {
+
+    })
+})
 
 describe('Components', () => {
 	it('should show a component', done => {
@@ -26,13 +33,14 @@ describe('Components', () => {
 		expect(typeof constructor).toBe('function')
 	});
 	
-	it('should return a virtualdom stream when constructed', () => {
+	it('should return a React.Component stream when constructed', () => {
 		let constructor = <p>HELLO WORLD</p>;
 		let vdom$ = constructor({});
-		expect(isStream(vdom$)).toBe(true)
-		expect(vdom$.value.tag).toBe('p')
-		expect(vdom$.value.props).toEqual({})
-		expect(vdom$.value.children).toEqual(['HELLO WORLD'])
+        expect(isStream(vdom$)).toBe(true)
+		expect(vdom$.value.type).toBe('p')
+		expect(vdom$.value.props).toEqual({
+            children: ['HELLO WORLD']
+        })
 	});
 
 	it('should render into a parentElement provided', done => {
@@ -44,7 +52,7 @@ describe('Components', () => {
 
 	it('should render without a parentElement provided', done => {
 		test$(render(<p>HELLO WORLD</p>, null), [
-			({element}) => assert.equal(element.outerHTML, '<p>HELLO WORLD</p>')
+			({element}) => expect(element.outerHTML).toBe('<p>HELLO WORLD</p>')
 		], done);
 	});
 
@@ -54,7 +62,7 @@ describe('Components', () => {
 		let clicks$ = stream(3);
 		let component = <DoubleClicks clicks$={clicks$} />;
 		testRender(component, [
-			({element}) => assert.equal(element.outerHTML, '<p>Clicks times 2: 6</p>')
+			'<p>Clicks times 2: 6</p>'
 		], done);
 	});
 
@@ -63,10 +71,10 @@ describe('Components', () => {
 		let component = <DoubleClicks clicks$={clicks$} />;
 		testRender(component, [
 			({element}) => {
-				assert.equal(element.outerHTML, '<p>Clicks times 2: 6</p>');
+				expect(element.outerHTML).toBe('<p>Clicks times 2: 6</p>');
 				clicks$(6);
 			},
-			({element}) => assert.equal(element.outerHTML, '<p>Clicks times 2: 12</p>')
+			({element}) => expect(element.outerHTML).toBe('<p>Clicks times 2: 12</p>')
 		], done);
 	});
 
@@ -84,8 +92,25 @@ describe('Components', () => {
 			}
 		});
 	});
+	
+	it('should reset globals for sub-trees', done => {
+		const ShowGlobals = (props, children, globals) => {
+			return <p>{globals.value}</p>
+		}
+		let clicks$ = stream(3);
+		let component = <div>
+			<div globals={{value: 'NESTED GLOBALS'}}><ShowGlobals /></div>
+		</div>;
+		testRender(component, [
+			'<div><p>NESTED GLOBALS</p></div>'
+		], done, {
+			globals: {
+				value: 'GLOBAL TEXT'
+			}
+		});
+	});
 
-	it('should update elements with textnodes', done => {
+	it('should update elements with text-nodes', done => {
 		let trigger$ = stream()
 		testRender(<p>{if$(trigger$, <div></div>, 'HELLO WORLD')}</p>, [
 			'<p><div></div></p>',
@@ -181,14 +206,14 @@ describe('Components', () => {
 
 		testRender(component, [
 			({element}) => {
-				assert.equal(element.querySelectorAll('li').length, 3);
-				assert.equal(element.querySelectorAll('li')[2].innerHTML, '2');
+				expect(element.querySelectorAll('li').length).toBe(3);
+				expect(element.querySelectorAll('li')[2].innerHTML).toBe('2');
 				let newArr = arr.slice(1);
 				list$(newArr);
 			},
 			({element}) => {
-				assert.equal(element.querySelectorAll('li').length, 2);
-				assert.equal(element.querySelectorAll('li')[1].innerHTML, '2');
+				expect(element.querySelectorAll('li').length).toBe(2);
+				expect(element.querySelectorAll('li')[1].innerHTML).toBe('2');
 			}
 		], done);
 
@@ -434,24 +459,27 @@ describe('Components', () => {
 		}, 10)
 	})
 	
-	it('should resolve in streams nested components returning streams', done => {
-		let trigger$ = stream(false)
+	it('should allow components returning streams', done => {
 		let Component = () => {
 			return stream(<div />)
 		}
 		let app = <div>
-			{
-				if$(trigger$,
-					<Component />
-				)
-			}
+			<Component />
 		</div>
 		testRender(app, [
-			'<div></div>',
 			'<div><div></div></div>'
 		], done)
-		setTimeout(() => {
-			trigger$(true)
-		}, 10)
+	})
+	
+	it('should allow components returning an array of components', done => {
+		let Component = () => {
+			return [<div />, <div />]
+		}
+		let app = <div>
+			<Component />
+		</div>
+		testRender(app, [
+			'<div><div></div><div></div></div>'
+		], done)
 	})
 });

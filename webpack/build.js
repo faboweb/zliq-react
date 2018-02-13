@@ -4,10 +4,8 @@ module.exports = {
     devtool: '#source-map',
     entry: './src/index.js',
     output: {
-        path: path.resolve(__dirname, 'lib'),
-        filename: 'zliq.js',
-        library: 'zliq',
-        libraryTarget: 'commonjs2'
+        library: 'zliq-native',
+        libraryTarget: 'umd'
     },
     module: {
         rules: [{

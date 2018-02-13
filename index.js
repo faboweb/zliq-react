@@ -1,1 +1,1 @@
-module.exports = require('./lib/zliq')
+export * from './lib/zliq-native';

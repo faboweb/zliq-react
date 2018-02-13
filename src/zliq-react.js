@@ -1,10 +1,22 @@
-import {stream, merge$, isStream} from './streamy';
-import {createElement, REMOVED, ADDED} from './streamy-dom';
+import React from 'react'
+import ReactDOM from 'react-dom'
+import {merge$, stream, isStream} from 'zliq'
 
-/*
-* wrap hyperscript elements in reactive streams dependent on their children streams
-* the hyperscript function returns a constructor so we can pass down globals from the renderer to the components
-*/
+export function render(vdom, parentElement, globals = {}, debounce = 10) {
+    let vdom$ = vdom(globals)
+	return vdom$.debounce(debounce).map(
+		function renderUpdate(element) {
+			if (!parentElement) {
+				parentElement = document.createElement('div')
+			}
+			ReactDOM.render(element, parentElement)
+			
+			return {
+				element: parentElement.childNodes[0]
+			}
+		})
+}
+
 export const h = (tag, props, ...children) => {
 	let elementConstructor = (globals) => {
 		let component;
@@ -21,18 +33,15 @@ export const h = (tag, props, ...children) => {
 				mergedChildren$,
 				globals
 			)
-			return resolveChild(result, globals)
+            return resolveChildren(result, globals)
+            .map(({tag, prop, children}) => React.createElement(tag, props, children))
 		}
 		return merge$([
 			wrapProps$(props),
 			mergedChildren$.map(flatten)
 		]).map(([props, children]) => {
-			return {
-				tag,
-				props,
-				children,
-				version: ++version
-		}});
+            return React.createElement(tag, props, children)
+		});
 	}
 	elementConstructor.IS_ELEMENT_CONSTRUCTOR = true
 
